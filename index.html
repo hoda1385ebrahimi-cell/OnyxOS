@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Study & Mastery OS v5</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <style>
+        :root {
+            --bg-main: #0a0e14; --bg-card: #121822; --bg-hover: #1b2432;
+            --border: #253042; --text-main: #e6edf3; --text-muted: #8b949e;
+            --accent: #38bdf8; --accent-glow: rgba(56, 189, 248, 0.14);
+            --high: #f43f5e; --med: #f59e0b; --low: #10b981; --routine: #a855f7;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Vazirmatn', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg-main); color: var(--text-main); line-height: 1.6; min-height: 100vh; overflow-x: hidden; }
+
+        /* Auth Screen */
+        #authScreen {
+            position: fixed; inset: 0; background: radial-gradient(circle at top, #131f33 0%, #070a0f 100%);
+            z-index: 999; display: flex; align-items: center; justify-content: center; padding: 20px;
+        }
+        .auth-card {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
+            padding: 28px 24px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+        }
+        .auth-card h2 { color: var(--accent); margin-bottom: 6px; font-size: 1.35rem; }
+        .auth-card p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px; }
+        .google-btn {
+            width: 100%; background: #fff; color: #111; border: none; padding: 11px; border-radius: 10px;
+            font-weight: 700; font-size: 0.92rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 14px;
+        }
+        .google-btn:hover { background: #f1f5f9; }
+        .auth-divider { display: flex; align-items: center; gap: 10px; color: var(--text-muted); font-size: 0.78rem; margin: 14px 0; }
+        .auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+        /* Topbar & Sidebar */
+        .topbar { background: var(--bg-card); border-bottom: 1px solid var(--border); padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .topbar-left { display: flex; align-items: center; gap: 12px; }
+        .hamburger-btn { background: var(--bg-hover); border: 1px solid var(--border); color: var(--text-main); width: 38px; height: 38px; border-radius: 8px; font-size: 1.25rem; cursor: pointer; }
+        .brand-title { font-size: 1.05rem; font-weight: 700; color: var(--accent); }
+        .sync-pill { font-size: 0.74rem; color: var(--low); background: rgba(16,185,129,0.12); padding: 3px 9px; border-radius: 12px; }
+        .rank-badge { background: var(--accent-glow); color: var(--accent); border: 1px solid var(--accent); padding: 4px 10px; border-radius: 20px; font-size: 0.76rem; font-weight: 600; }
+
+        .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); backdrop-filter: blur(2px); z-index: 199; display: none; }
+        .sidebar-overlay.open { display: block; }
+        .sidebar { position: fixed; top: 0; right: -280px; width: 270px; height: 100vh; background: var(--bg-card); border-left: 1px solid var(--border); z-index: 200; padding: 18px 14px; display: flex; flex-direction: column; gap: 6px; transition: 0.25s ease; overflow-y: auto; }
+        [dir="ltr"] .sidebar { right: auto; left: -280px; border-left: none; border-right: 1px solid var(--border); }
+        .sidebar.open { right: 0; }
+        [dir="ltr"] .sidebar.open { left: 0; }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+        .nav-item { background: transparent; border: 1px solid transparent; color: var(--text-muted); padding: 11px 12px; border-radius: 8px; cursor: pointer; text-align: right; font-size: 0.9rem; display: flex; align-items: center; gap: 10px; width: 100%; }
+        [dir="ltr"] .nav-item { text-align: left; }
+        .nav-item:hover { background: var(--bg-hover); color: var(--text-main); }
+        .nav-item.active { background: var(--accent-glow); color: var(--accent); border-color: var(--accent); font-weight: 600; }
+
+        /* Layout & Components */
+        .main-container { max-width: 1200px; margin: 0 auto; padding: 18px 14px 45px; }
+        .page { display: none; animation: fadeIn 0.2s ease; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 18px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
+        .card-title { font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+        .btn { background: var(--bg-hover); color: var(--text-main); border: 1px solid var(--border); padding: 8px 13px; border-radius: 8px; cursor: pointer; font-size: 0.84rem; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s; }
+        .btn:hover { border-color: var(--accent); background: var(--accent-glow); }
+        .btn-primary { background: var(--accent); color: #090d16; font-weight: 700; border: none; }
+        .btn-routine { background: var(--routine); color: #fff; font-weight: 700; border: none; }
+        .btn-danger { color: var(--high); border-color: rgba(244,63,94,0.3); }
+        .btn-sm { padding: 5px 10px; font-size: 0.78rem; }
+        .input-std, select, textarea { background: var(--bg-main); border: 1px solid var(--border); color: var(--text-main); padding: 9px 12px; border-radius: 8px; font-size: 0.88rem; width: 100%; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 12px; margin-bottom: 18px; }
+        .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 15px; }
+        .stat-label { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 4px; }
+        .stat-val { font-size: 1.5rem; font-weight: 800; }
+        .progress-bar { width: 100%; height: 7px; background: var(--bg-main); border-radius: 4px; overflow: hidden; margin-top: 8px; }
+        .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.25s ease; }
+
+        .grid-2 { display: grid; grid-template-columns: 1.15fr 1fr; gap: 18px; }
+        .workspace-grid { display: grid; grid-template-columns: 290px 1fr; gap: 18px; }
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+        @media (max-width: 850px) { .grid-2, .workspace-grid { grid-template-columns: 1fr; } .card { padding: 14px; } }
+
+        /* Tasks, Timeline, Charts, Map, Flashcards */
+        .task-item { background: var(--bg-main); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+        .task-item.done-full { border-color: rgba(16,185,129,0.45); }
+        .task-summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .task-summary-left { display: flex; align-items: center; gap: 10px; flex: 1; }
+        .task-checkbox { width: 19px; height: 19px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+        .done-full .task-title-text { text-decoration: line-through; color: var(--text-muted); }
+        .xp-pill { background: var(--accent-glow); color: var(--accent); padding: 2px 9px; border-radius: 12px; font-size: 0.76rem; font-weight: 700; }
+        .task-details { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); display: none; flex-direction: column; gap: 10px; }
+        .task-details.open { display: flex; }
+        .slider-row { display: flex; align-items: center; gap: 10px; font-size: 0.84rem; }
+        .slider-row input[type="range"] { flex: 1; accent-color: var(--accent); cursor: pointer; }
+
+        .badge { font-size: 0.72rem; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+        .badge-high { background: rgba(244,63,94,0.15); color: var(--high); }
+        .badge-med { background: rgba(245,158,11,0.15); color: var(--med); }
+        .badge-low { background: rgba(16,185,129,0.15); color: var(--low); }
+
+        .routine-block { margin-bottom: 18px; }
+        .routine-block-title { font-size: 0.92rem; font-weight: 700; color: #c084fc; margin-bottom: 10px; }
+        .timeline-list { border-right: 2px solid var(--border); padding-right: 16px; margin-right: 8px; display: flex; flex-direction: column; gap: 10px; }
+        .timeline-item { position: relative; background: var(--bg-main); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .timeline-item::before { content: ''; position: absolute; right: -23px; width: 12px; height: 12px; border-radius: 50%; background: var(--border); border: 2px solid var(--bg-card); }
+        .timeline-item.r-done { border-color: rgba(168,85,247,0.5); }
+        .timeline-item.r-done::before { background: var(--routine); }
+        .time-pill { font-size: 0.78rem; color: #c084fc; background: rgba(168,85,247,0.12); padding: 2px 8px; border-radius: 6px; font-weight: 700; }
+
+        .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 130px; padding-top: 16px; border-bottom: 1px solid var(--border); }
+        .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+        .bar-fill { width: 100%; max-width: 28px; border-radius: 4px 4px 0 0; min-height: 3px; }
+        .bar-lbl { font-size: 0.68rem; color: var(--text-muted); }
+
+        .quest-map-wrap { background: radial-gradient(circle at top, #162235 0%, #090d14 100%); border: 1px solid var(--border); border-radius: 12px; padding: 16px; overflow-x: auto; text-align: center; }
+        .quest-svg { min-width: 600px; width: 100%; height: 180px; }
+        .map-node { cursor: pointer; }
+        .phase-card { background: var(--bg-main); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+        .subbox-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); }
+        .subbox-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 0.84rem; }
+
+        .tabs { display: flex; gap: 6px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 10px; overflow-x: auto; }
+        .tab-btn { background: transparent; border: none; color: var(--text-muted); padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 0.86rem; white-space: nowrap; }
+        .tab-btn.active { background: var(--accent-glow); color: var(--accent); font-weight: 700; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+        .flashcard { background: var(--bg-main); border: 1px solid var(--accent); border-radius: 12px; padding: 28px 20px; text-align: center; cursor: pointer; min-height: 150px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .cat-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+        .cat-pill { background: var(--bg-main); border: 1px solid var(--border); color: var(--text-muted); padding: 4px 12px; border-radius: 16px; font-size: 0.8rem; cursor: pointer; }
+        .cat-pill.active { background: var(--accent-glow); color: var(--accent); border-color: var(--accent); font-weight: 700; }
+
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 520px; }
+        th, td { border: 1px solid var(--border); padding: 9px 10px; text-align: right; vertical-align: top; }
+        th { background: var(--bg-main); color: var(--accent); }
+        .chat-box { display: flex; flex-direction: column; height: 340px; }
+        .chat-messages { flex: 1; overflow-y: auto; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; font-size: 0.86rem; }
+        .msg { padding: 8px 12px; border-radius: 8px; max-width: 90%; white-space: pre-wrap; }
+        .msg-user { background: var(--accent-glow); border: 1px solid var(--accent); align-self: flex-start; }
+        .msg-ai { background: var(--bg-hover); border: 1px solid var(--border); align-self: flex-end; }
+        .exam-q-card { background: var(--bg-main); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+        .exam-option { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; margin-top: 6px; cursor: pointer; font-size: 0.88rem; }
+        .ai-coach-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 12px; }
+        .coach-card { background: var(--bg-main); border: 1px solid var(--border); border-radius: 10px; padding: 14px; font-size: 0.86rem; line-height: 1.7; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+
+<!-- AUTH / LOGIN SCREEN -->
+<div id="authScreen">
+    <div class="auth-card">
+        <h2>Study & Mastery OS</h2>
+        <p>وارد اکانت خود شوید تا اطلاعاتتان بین گوشی و لپ‌تاپ همگام‌سازی شود.</p>
+
+        <button class="google-btn" onclick="loginWithGoogle()">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" alt="G">
+            ورود سریع با اکانت گوگل
+        </button>
+
+        <div class="auth-divider">یا ورود / ثبت‌نام با ایمیل</div>
+
+        <form onsubmit="handleEmailAuth(event)" style="display:flex; flex-direction:column; gap:10px;">
+            <input type="text" id="authName" class="input-std" placeholder="نام شما (برای ثبت‌نام جدید، مثلاً: رین)" style="display:none;">
+            <input type="email" id="authEmail" class="input-std" placeholder="ایمیل" required>
+            <input type="password" id="authPass" class="input-std" placeholder="رمز عبور (حداقل ۶ کاراکتر)" required>
+            <button type="submit" class="btn btn-primary" id="authSubmitBtn">ورود به اکانت</button>
+        </form>
+
+        <div style="margin-top:12px; font-size:0.82rem; color:var(--text-muted);">
+            <span id="authToggleText">اکانت ندارید؟</span>
+            <a href="#" style="color:var(--accent);" onclick="toggleAuthMode(event)" id="authToggleLink">ثبت‌نام کنید</a>
+        </div>
+
+        <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">
+            <button class="btn btn-sm" style="width:100%;" onclick="enterOfflineDemo()">ورود آفلاین (حالت تست بدون سرور)</button>
+        </div>
+    </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="appShell" style="display:none;">
+    <header class="topbar">
+        <div class="topbar-left">
+            <button class="hamburger-btn" onclick="toggleSidebar()">☰</button>
+            <div class="brand-title">Study & Mastery OS</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span class="sync-pill" id="syncStatus">☁️ آماده</span>
+            <span class="rank-badge" id="userRankBadge">کاربر</span>
+        </div>
+    </header>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <strong style="color: var(--accent);" id="sidebarUserName">منوی فرماندهی</strong>
+            <button class="btn btn-sm" onclick="toggleSidebar()">✕</button>
+        </div>
+        <div id="dynamicNavList" style="display:flex; flex-direction:column; gap:6px; flex:1;"></div>
+        <button class="btn btn-danger btn-sm" style="margin-top:16px;" onclick="logoutUser()">🚪 خروج از اکانت</button>
+    </aside>
+
+    <main class="main-container">
+        <!-- PAGE 1: DASHBOARD -->
+        <section id="page-dashboard" class="page active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">امتیاز درسی امروز</div>
+                    <div class="stat-val"><span id="dashDailyScore">0</span><span style="font-size:0.85rem; color:var(--text-muted)">/100</span></div>
+                    <div class="progress-bar"><div class="progress-fill" id="dashScoreBar"></div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">میانگین ماهانه</div>
+                    <div class="stat-val"><span id="dashMonthlyAvg">0</span>%</div>
+                    <div class="progress-bar"><div class="progress-fill" id="dashMonthlyBar" style="background:var(--low);"></div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">استریک درسی</div>
+                    <div class="stat-val">🔥 <span id="dashStreak">0</span></div>
+                    <div style="font-size:0.74rem; color:var(--text-muted); margin-top:4px;">منعطف (بدون سوختن)</div>
+                </div>
+                <div class="stat-card" style="border-color: rgba(168,85,247,0.4);">
+                    <div class="stat-label">روتین زندگی (استریک جدا)</div>
+                    <div class="stat-val" style="color:#c084fc;">🌿 <span id="dashRoutineStreak">0</span> <small style="font-size:0.85rem;">(<span id="dashRoutinePct">0</span>%)</small></div>
+                    <div class="progress-bar"><div class="progress-fill" id="dashRoutineBar" style="background:var(--routine);"></div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">آزمون‌های پیش‌رو</div>
+                    <div class="stat-val" style="color:var(--med);">📝 <span id="dashUpcomingExams">0</span></div>
+                    <div style="font-size:0.74rem; color:var(--text-muted); margin-top:4px; cursor:pointer;" onclick="navigate('page-exams')">مدیریت آزمون‌ها ←</div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div>
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">📅 وضعیت برنامه امروز</div><button class="btn btn-sm" onclick="navigate('page-weekly')">جدول هفتگی ←</button></div>
+                        <div id="dashTodaySchedule" style="font-size:0.86rem; display:flex; flex-direction:column; gap:6px;"></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">⚡ خلاصه تسک‌های امروز</div><button class="btn btn-sm" onclick="navigate('page-daily')">میز کار ←</button></div>
+                        <div id="dashTaskSummary" style="display:flex; flex-direction:column; gap:7px;"></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">✨ چت سریع هوش مصنوعی (<span id="activeAiNameBadge">Gemini</span>)</div>
+                        <button class="btn btn-sm" onclick="navigate('page-settings')">⚙️ تغییر AI</button>
+                    </div>
+                    <div class="chat-box">
+                        <div class="chat-messages" id="chatMessages"><div class="msg msg-ai">سلام! هر سوال درسی یا برنامه‌ریزی داری بپرس.</div></div>
+                        <form style="display:flex; gap:8px;" onsubmit="sendChat(event)">
+                            <input type="text" id="chatInput" class="input-std" placeholder="سوالت رو بنویس..." required>
+                            <button type="submit" class="btn btn-primary">ارسال</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PAGE 2: LIFE ROUTINE -->
+        <section id="page-routine" class="page">
+            <div class="stats-grid">
+                <div class="stat-card" style="border-color:rgba(168,85,247,0.4);">
+                    <div class="stat-label">استریک مستقل روتین</div>
+                    <div class="stat-val" style="color:#c084fc;">🌿 <span id="routineStreakVal">0</span> روز</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">تکمیل روتین امروز</div>
+                    <div class="stat-val"><span id="routineTodayPct">0</span>%</div>
+                    <div class="progress-bar"><div class="progress-fill" id="routineTodayBar" style="background:var(--routine);"></div></div>
+                </div>
+                <div class="stat-card" style="display:flex; align-items:center; justify-content:center;">
+                    <button class="btn btn-routine" onclick="finishRoutineDay()">✓ ثبت پایان روتین امروز</button>
+                </div>
+            </div>
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header"><div class="card-title">🕒 تایم‌لاین روتین روزانه</div></div>
+                    <form onsubmit="addRoutineItem(event)" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px;">
+                        <input type="text" id="rTitle" class="input-std" style="flex:2; min-width:150px;" placeholder="عنوان عادت..." required>
+                        <input type="time" id="rTime" class="input-std" style="flex:0.8; min-width:95px;" value="08:00">
+                        <select id="rBlock" style="flex:1; min-width:100px;"><option value="morning">🌅 صبح</option><option value="afternoon">☀️ عصر</option><option value="evening">🌙 شب</option></select>
+                        <button type="submit" class="btn btn-routine btn-sm">+ افزودن</button>
+                    </form>
+                    <div id="routineTimelineContainer"></div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">📈 پیشرفت روتین (۱۴ روز اخیر)</div></div>
+                    <div class="bar-chart" id="routineBarChart"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PAGE 3: DAILY WORKSPACE -->
+        <section id="page-daily" class="page">
+            <div class="card">
+                <div class="card-header"><div class="card-title">⚡ میز کار روزانه و تایمر</div><button class="btn btn-primary btn-sm" onclick="finishDay()">ثبت پایان روز</button></div>
+                <div class="workspace-grid">
+                    <div style="background:var(--bg-main); border:1px solid var(--border); border-radius:10px; padding:18px; text-align:center;">
+                        <div style="font-size:0.82rem; color:var(--text-muted);">تایمر معکوس دلخواه</div>
+                        <div style="font-size:2.8rem; font-weight:800; color:var(--accent); margin:10px 0;" id="timerDisplay">45:00</div>
+                        <div style="display:flex; justify-content:center; gap:6px; margin-bottom:12px;">
+                            <input type="number" id="customMinutes" class="input-std" style="width:70px; text-align:center;" value="45" min="1" max="240">
+                            <button class="btn btn-sm" onclick="setCustomTimer()">تنظیم</button>
+                        </div>
+                        <div style="display:flex; justify-content:center; gap:6px;">
+                            <button class="btn btn-primary btn-sm" onclick="startTimer()">شروع</button>
+                            <button class="btn btn-sm" onclick="pauseTimer()">توقف</button>
+                            <button class="btn btn-sm" onclick="resetTimer()">ریست</button>
+                        </div>
+                    </div>
+                    <div>
+                        <form style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;" onsubmit="addTask(event)">
+                            <input type="text" id="taskTitleInput" class="input-std" style="flex:2; min-width:170px;" placeholder="عنوان تسک..." required>
+                            <select id="taskPriorityInput" style="flex:1; min-width:130px;"><option value="3">اولویت بالا (×۳)</option><option value="2" selected>متوسط (×۲)</option><option value="1">پایین (×۱)</option></select>
+                            <input type="text" id="taskNoteInput" class="input-std" style="flex:1.5; min-width:140px;" placeholder="یادداشت...">
+                            <button type="submit" class="btn btn-primary">+ افزودن</button>
+                        </form>
+                        <div id="dailyTaskList"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PAGE 4: WEEKLY -->
+        <section id="page-weekly" class="page">
+            <div class="card">
+                <div class="card-header"><div class="card-title">📅 برنامه هفتگی پویا</div><button class="btn btn-primary btn-sm" onclick="addWeeklyColumn()">+ افزودن ستون</button></div>
+                <div class="table-wrap"><table><thead id="weeklyThead"></thead><tbody id="weeklyTbody"></tbody></table></div>
+            </div>
+        </section>
+
+        <!-- PAGE 5: ROADMAP -->
+        <section id="page-roadmap" class="page">
+            <div class="card"><div class="card-header"><div class="card-title">🗺️ نقشه مسیر بازی</div><button class="btn btn-primary btn-sm" onclick="addMapMilestone()">+ ایستگاه جدید</button></div><div class="quest-map-wrap" id="questMapWrap"></div></div>
+            <div class="card"><div class="card-header"><div class="card-title">🎯 باکس‌های اهداف اصلی</div><button class="btn btn-primary btn-sm" onclick="addGoalBox()">+ هدف جدید</button></div><div class="cards-grid" id="goalBoxesContainer"></div></div>
+            <div class="card"><div class="card-header"><div class="card-title">📦 باکس‌های فازها (با باکس‌های داخلی)</div><button class="btn btn-primary btn-sm" onclick="addPhaseBox()">+ فاز جدید</button></div><div style="display:flex; flex-direction:column; gap:16px;" id="phaseBoxesContainer"></div></div>
+        </section>
+
+        <!-- PAGE 6: EXAMS -->
+        <section id="page-exams" class="page">
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header"><div class="card-title">🎯 آزمون‌ساز هوشمند</div><button class="btn btn-sm" onclick="loadSampleDrivingExam()">🚗 نمونه آیین‌نامه</button></div>
+                    <form onsubmit="generateAIExam(event)" style="display:flex; flex-direction:column; gap:10px;">
+                        <input type="text" id="examSubject" class="input-std" placeholder="نام درس یا موضوع..." required>
+                        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+                            <select id="examType"><option value="mcq">تستی</option><option value="desc">تشریحی</option></select>
+                            <select id="examDiff"><option value="آسان">آسان</option><option value="متوسط" selected>متوسط</option><option value="سخت">سخت</option><option value="شبیه‌ساز دقیق">شبیه‌ساز دقیق</option></select>
+                            <input type="number" id="examCount" class="input-std" value="5" min="1" max="30">
+                        </div>
+                        <textarea id="examDesc" rows="2" placeholder="توضیحات اضافه..."></textarea>
+                        <button type="submit" class="btn btn-primary" id="genExamBtn">✨ ساخت و شروع آزمون</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">📆 برنامه‌ریزی آزمون‌ها</div></div>
+                    <form onsubmit="addPlannedExam(event)" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+                        <input type="text" id="planExamTitle" class="input-std" style="flex:2;" placeholder="عنوان آزمون..." required>
+                        <input type="text" id="planExamDate" class="input-std" style="flex:1;" placeholder="تاریخ..." required>
+                        <button type="submit" class="btn btn-primary btn-sm">+ ثبت</button>
+                    </form>
+                    <div id="plannedExamsList" style="display:flex; flex-direction:column; gap:8px;"></div>
+                </div>
+            </div>
+            <div class="card" id="activeExamCard" style="display:none;">
+                <div class="card-header"><div class="card-title" id="activeExamTitle">آزمون</div><button class="btn btn-sm btn-danger" onclick="document.getElementById('activeExamCard').style.display='none'">بستن</button></div>
+                <div id="examQuestionsContainer"></div>
+                <button class="btn btn-primary" onclick="submitExam()" style="margin-top:10px;">ثبت پاسخ‌ها و دریافت نمره</button>
+                <div id="examResultBox" class="coach-card" style="display:none; margin-top:14px; border-color:var(--accent);"></div>
+            </div>
+        </section>
+
+        <!-- PAGE 7: ANALYTICS -->
+        <section id="page-analytics" class="page">
+            <div class="grid-2">
+                <div class="card"><div class="card-header"><div class="card-title">📊 روند امتیازات روزانه</div></div><div class="bar-chart" id="scoreTrendChart"></div></div>
+                <div class="card"><div class="card-header"><div class="card-title">📝 نمودار نمرات آزمون‌ها</div></div><div class="bar-chart" id="examTrendChart"></div></div>
+            </div>
+            <div class="card"><div class="card-header"><div class="card-title">📋 جدول عملکرد تسک‌ها</div></div><div class="table-wrap"><table><thead><tr><th>تسک</th><th>میانگین</th><th>وضعیت</th></tr></thead><tbody id="taskAnalyticsTable"></tbody></table></div></div>
+            <div class="card" style="border-color:var(--accent);">
+                <div class="card-header">
+                    <div class="card-title">🧠 میز کار مربی تحلیلگر هوشمند</div>
+                    <div style="display:flex; gap:6px;"><button class="btn btn-primary btn-sm" onclick="runAIAnalysis()" id="runAiBtn">✨ تحلیل جامع</button><button class="btn btn-sm" onclick="copyReportForGemini()">📋 کپی گزارش</button></div>
+                </div>
+                <div class="ai-coach-grid">
+                    <div class="coach-card" style="border-color:rgba(16,185,129,0.4);"><strong style="color:var(--low);">🌟 نقاط قوت</strong><div id="aiStrengths" style="margin-top:6px; color:var(--text-muted);">—</div></div>
+                    <div class="coach-card" style="border-color:rgba(244,63,94,0.4);"><strong style="color:var(--high);">⚠️ نقاط ضعف</strong><div id="aiWeaknesses" style="margin-top:6px; color:var(--text-muted);">—</div></div>
+                    <div class="coach-card" style="border-color:rgba(56,189,248,0.4);"><strong style="color:var(--accent);">🚀 برنامه اقدام</strong><div id="aiActionPlan" style="margin-top:6px; color:var(--text-muted);">—</div></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PAGE 8: STUDY VAULT -->
+        <section id="page-vault" class="page">
+            <div class="card">
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="openVaultTab(event, 'v-flashcards')">🃏 فلش‌کارت هوشمند</button>
+                    <button class="tab-btn" onclick="openVaultTab(event, 'v-formulas')">📐 بانک فرمول</button>
+                    <button class="tab-btn" onclick="openVaultTab(event, 'v-errors')">⚠️ نقاط ضعف</button>
+                    <button class="tab-btn" onclick="openVaultTab(event, 'v-scratch')">📝 یادداشت آزاد</button>
+                </div>
+                <div id="v-flashcards" class="tab-panel active">
+                    <div style="background:var(--bg-main); border:1px solid var(--accent); border-radius:10px; padding:14px; margin-bottom:16px;">
+                        <strong style="color:var(--accent); font-size:0.9rem;">✨ ساخت خودکار فلش‌کارت با هوش مصنوعی</strong>
+                        <form onsubmit="generateAIFlashcards(event)" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;">
+                            <input type="text" id="aiFcTopic" class="input-std" style="flex:2;" placeholder="موضوع..." required>
+                            <input type="text" id="aiFcCat" class="input-std" style="flex:1;" placeholder="دسته‌بندی..." required>
+                            <select id="aiFcDiff" style="flex:0.8;"><option value="آسان">آسان</option><option value="متوسط" selected>متوسط</option><option value="سخت">سخت</option></select>
+                            <input type="number" id="aiFcCount" class="input-std" style="width:70px;" value="5" min="1" max="20">
+                            <button type="submit" class="btn btn-primary btn-sm" id="aiFcBtn">ساخت کارت‌ها</button>
+                        </form>
+                    </div>
+                    <form onsubmit="addFlashcard(event)" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
+                        <input type="text" id="fcCat" class="input-std" style="flex:0.8;" placeholder="دسته" required>
+                        <input type="text" id="fcFront" class="input-std" style="flex:1.2;" placeholder="سوال" required>
+                        <input type="text" id="fcBack" class="input-std" style="flex:1.2;" placeholder="جواب" required>
+                        <button type="submit" class="btn btn-sm">+ افزودن دستی</button>
+                    </form>
+                    <div class="cat-pills" id="fcCategoryPills"></div>
+                    <div id="flashcardStage"></div>
+                </div>
+                <div id="v-formulas" class="tab-panel">
+                    <form onsubmit="addFormula(event)" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
+                        <input type="text" id="formSubject" class="input-std" style="flex:1;" placeholder="درس" required>
+                        <input type="text" id="formContent" class="input-std" style="flex:2.5;" placeholder="فرمول یا نکته..." required>
+                        <button type="submit" class="btn btn-primary btn-sm">+ ذخیره</button>
+                    </form>
+                    <div id="formulasList" class="cards-grid"></div>
+                </div>
+                <div id="v-errors" class="tab-panel">
+                    <form onsubmit="addWeakTopic(event)" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
+                        <input type="text" id="weakSubject" class="input-std" style="flex:1;" placeholder="درس" required>
+                        <input type="text" id="weakIssue" class="input-std" style="flex:2.5;" placeholder="مبحث مشکل‌دار..." required>
+                        <button type="submit" class="btn btn-primary btn-sm">+ ثبت</button>
+                    </form>
+                    <div id="weakList" style="display:flex; flex-direction:column; gap:8px;"></div>
+                </div>
+                <div id="v-scratch" class="tab-panel"><textarea id="generalNotes" rows="10" placeholder="یادداشت‌های آزاد..."></textarea></div>
+            </div>
+        </section>
+
+        <!-- PAGE 9: SETTINGS (MULTI-AI + MENU CUSTOMIZER) -->
+        <section id="page-settings" class="page">
+            <div class="card">
+                <div class="card-header"><div class="card-title">🤖 تنظیمات هوش مصنوعی (انتخاب مدل کنترل‌کننده)</div></div>
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    <div>
+                        <label style="font-size:0.84rem;">سرویس‌دهنده هوش مصنوعی:</label>
+                        <select id="aiProviderSelect" onchange="toggleCustomAiFields()">
+                            <option value="gemini">Google Gemini (gemini-2.5-flash)</option>
+                            <option value="openai">OpenAI / ChatGPT (gpt-4o-mini)</option>
+                            <option value="openrouter">OpenRouter (Claude / DeepSeek / Llama)</option>
+                        </select>
+                    </div>
+                    <div id="customModelWrap" style="display:none;">
+                        <label style="font-size:0.84rem;">نام مدل (مثلاً: anthropic/claude-3.5-sonnet یا deepseek/deepseek-chat):</label>
+                        <input type="text" id="aiModelInput" class="input-std" placeholder="deepseek/deepseek-chat">
+                    </div>
+                    <div>
+                        <label style="font-size:0.84rem;">کلید API سرویس انتخاب‌شده:</label>
+                        <input type="password" id="apiKeyInput" class="input-std" placeholder="کلید API را وارد کنید...">
+                    </div>
+                    <button class="btn btn-primary" style="width:fit-content;" onclick="saveAiSettings()">ذخیره تنظیمات هوش مصنوعی</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><div class="card-title">🎨 ظاهر و زبان</div></div>
+                <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center;">
+                    <label>رنگ پس‌زمینه: <input type="color" id="bgColorPicker" value="#0a0e14"></label>
+                    <label>رنگ تم: <input type="color" id="accentColorPicker" value="#38bdf8"></label>
+                    <button class="btn btn-sm" onclick="toggleLanguage()" id="langBtn">تغییر به English</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><div class="card-title">☰ شخصی‌سازی منوی همبرگری</div></div>
+                <div id="menuCustomizerList" style="display:flex; flex-direction:column; gap:8px;"></div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<!-- FIREBASE CLOUD BRIDGE (ES MODULE) -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // =========================================================================
+    // 1. ایمیل گوگل خودت (رین) را اینجا بنویس تا برنامه اختصاصی خودت لود شود:
+    // =========================================================================
+    window.OWNER_EMAIL = "hoda1385ebrahimi@gmail.com";
+
+    // =========================================================================
+    // 2. اطلاعات پروژه Firebase خودت را اینجا جایگذاری کن:
+    // =========================================================================
+   const firebaseConfig = {
+  apiKey: "AIzaSyCpb0bX1OT7Owb-A9YPHBD7NCI2_NYirf4",
+  authDomain: "onyxos-8e6b6.firebaseapp.com",
+  projectId: "onyxos-8e6b6",
+  storageBucket: "onyxos-8e6b6.firebasestorage.app",
+  messagingSenderId: "484260357037",
+  appId: "1:484260357037:web:a3b10d5fb1c66113147724"
+};
+
+    const isConfigured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith("PASTE_");
+
+    if (isConfigured) {
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const googleProvider = new GoogleAuthProvider();
+
+        window.CloudBridge = {
+            enabled: true,
+            async loginGoogle() { await signInWithPopup(auth, googleProvider); },
+            async loginEmail(e, p) { await signInWithEmailAndPassword(auth, e, p); },
+            async registerEmail(n, e, p) {
+                const cred = await createUserWithEmailAndPassword(auth, e, p);
+                await updateProfile(cred.user, { displayName: n });
+            },
+            async logout() { await signOut(auth); },
+            async loadUserData(uid) {
+                const snap = await getDoc(doc(db, "users", uid));
+                return snap.exists() ? snap.data() : null;
+            },
+            async saveUserData(uid, data) {
+                document.getElementById('syncStatus').textContent = '⏳ در حال ذخیره...';
+                await setDoc(doc(db, "users", uid), data);
+                document.getElementById('syncStatus').textContent = '☁️ همگام‌سازی شد';
+            }
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                window.initAuthenticatedApp(user);
+            } else {
+                document.getElementById('authScreen').style.display = 'flex';
+                document.getElementById('appShell').style.display = 'none';
+            }
+        });
+    } else {
+        window.CloudBridge = { enabled: false };
+    }
+</script>
+
+<!-- MAIN APP LOGIC -->
+<script>
+    // 1. قالب اختصاصی رین (فقط برای ایمیل صاحب سایت لود می‌شود)
+    const rinPersonalData = {
+        displayName: "رین",
+        aiProvider: "gemini", aiModel: "", apiKey: "",
+        lang: 'fa', bgColor: '#0a0e14', accentColor: '#38bdf8',
+        streak: 0, totalXP: 0, focusMinutesToday: 0, routineStreak: 0, routineHistory: [],
+        routineItems: [
+            { id: 1, title: "بیدار شدن، نوشیدن آب و مرتب کردن اتاق", time: "07:30", block: "morning", done: false },
+            { id: 2, title: "صبحانه سالم و مرور برنامه روز", time: "08:00", block: "morning", done: false },
+            { id: 3, title: "ورزش / باشگاه یا پیاده‌روی", time: "17:00", block: "afternoon", done: false },
+            { id: 4, title: "آماده‌سازی برای خواب بدون گوشی", time: "23:00", block: "evening", done: false }
+        ],
+        navItems: [
+            { id: 'page-dashboard', icon: '🏠', label: 'داشبورد اصلی' },
+            { id: 'page-routine', icon: '🌿', label: 'روتین زندگی' },
+            { id: 'page-daily', icon: '⚡', label: 'میز کار روزانه و تایمر' },
+            { id: 'page-weekly', icon: '📅', label: 'برنامه هفتگی پویا' },
+            { id: 'page-roadmap', icon: '🗺️', label: 'نقشه راه و اهداف' },
+            { id: 'page-exams', icon: '📝', label: 'آزمون‌ساز و برنامه آزمون' },
+            { id: 'page-analytics', icon: '📊', label: 'میز کار تحلیلگر هوشمند' },
+            { id: 'page-vault', icon: '📚', label: 'خزانه مطالعه و فلش‌کارت' },
+            { id: 'page-settings', icon: '⚙️', label: 'تنظیمات و هوش مصنوعی' }
+        ],
+        history: [], examHistory: [],
+        plannedExams: [
+            { id: 1, title: "آزمون آزمایشی آیین‌نامه رانندگی", date: "۱۵ آذر ۱۴۰۵", done: false },
+            { id: 2, title: "آزمون فصل ۱ و ۲ ریاضی نهم", date: "۳۰ آذر ۱۴۰۵", done: false }
+        ],
+        tasks: [
+            { id: 1, title: "ریاضی نهم: فصل ۱ (مجموعه‌ها)", priority: 3, progress: 0, note: "ویدیو + ۲ مثال بدون نگاه کردن", expanded: false },
+            { id: 2, title: "تمرین سیلوئت طراحی سلاح (۴۵ دقیقه)", priority: 2, progress: 0, note: "۱۰ فرم سیاه‌وسفید", expanded: false },
+            { id: 3, title: "گرامر انگلیسی + یک پاراگراف رایتینگ", priority: 2, progress: 0, note: "توضیح طرح به انگلیسی", expanded: false }
+        ],
+        weeklyColumns: ["صبح / ظهر", "عصر", "شب"],
+        weeklyRows: [
+            { day: "شنبه", cells: ["ریاضی نهم (۱.۵ ساعت)", "کلاس رانندگی / پخت سری ۱", "طراحی دیجیتال (۱ ساعت)"] },
+            { day: "یکشنبه", cells: ["علوم نهم (۱.۵ ساعت)", "باشگاه", "گرامر و رایتینگ انگلیسی"] },
+            { day: "دوشنبه", cells: ["ریاضی نهم (۱.۵ ساعت)", "کلاس رانندگی / پخت سری ۲", "طراحی دیجیتال (۱ ساعت)"] },
+            { day: "سه‌شنبه", cells: ["دروس عمومی نهم", "کلاس طراحی", "مرور تمرین‌های کلاس"] },
+            { day: "چهارشنبه", cells: ["ریاضی نهم (۱.۵ ساعت)", "باشگاه", "گرامر و رایتینگ انگلیسی"] },
+            { day: "پنج‌شنبه", cells: ["علوم نهم (۱.۵ ساعت)", "پخت سفارش‌ها و پخش", "طراحی دیجیتال (پروژه آزاد)"] },
+            { day: "جمعه", cells: ["جبران عقب‌ماندگی‌ها", "استراحت کامل", "برنامه‌ریزی هفته بعد"] }
+        ],
+        mapMilestones: [
+            { id: 1, label: "شروع مسیر", sub: "آذر ۱۴۰۵", done: true },
+            { id: 2, label: "گواهینامه", sub: "آذر ۱۴۰۵", done: false },
+            { id: 3, label: "پایان نهم", sub: "خرداد ۱۴۰۶", done: false },
+            { id: 4, label: "دهم و رندر", sub: "دی ۱۴۰۶", done: false },
+            { id: 5, label: "پورتفولیو", sub: "تیر ۱۴۰۷", done: false },
+            { id: 6, label: "قبولی روانشناسی", sub: "پاییز ۱۴۰۷/۸", done: false }
+        ],
+        goals: [
+            { id: 1, title: "🎓 هدف تحصیلی", desc: "قبولی در رشته روانشناسی (دانشگاه شیراز یا تراز اول) + حفظ معدل بالا." },
+            { id: 2, title: "⚔️ طراحی دیجیتال", desc: "رسیدن به سطح حرفه‌ای در Weapon & Costume Design و جذب سفارش خارجی." },
+            { id: 3, title: "🥐 کسب‌وکار شیرینی‌پزی", desc: "راه‌اندازی و تثبیت کسب‌وکار شیرینی‌پزی به عنوان منبع درآمد مستقل." }
+        ],
+        phases: [
+            { id: 1, title: "فاز ۱: ساخت پایه (آذر ۱۴۰۵ تا خرداد ۱۴۰۶)", desc: "جمع‌بندی پایه نهم، گواهینامه، اصول طراحی و شروع کسب‌وکار.", subBoxes: [
+                { id: 101, title: "ماه ۱ (آذر ۱۴۰۵)", content: "ریاضی فصل ۱ و ۲، علوم فصل ۱ و ۲، گواهینامه، تمرین سیلوئت." }
+            ]},
+            { id: 2, title: "فاز ۲: دبیرستان و تخصص (تیر تا دی ۱۴۰۶)", desc: "دروس دهم و یازدهم انسانی، رندر متریال‌ها و تثبیت کسب‌وکار.", subBoxes: [] }
+        ],
+        formulas: [{ id: 1, subject: "ریاضی نهم", content: "تعداد زیرمجموعه‌های مجموعه n عضوی = 2 به توان n" }],
+        weakTopics: [{ id: 1, subject: "ریاضی", issue: "اثبات‌های هندسه فصل ۳" }],
+        flashcards: [{ id: 1, category: "آیین‌نامه", front: "تابلوی مثلث با راس به پایین چیست؟", back: "رعایت حق تقدم" }],
+        notes: "استراتژی ریاضی: ویدیو -> حل ۲ مثال بدون نگاه کردن -> تمرین کتاب."
+    };
+
+    // 2. قالب آموزشی و عمومی برای سایر کاربران
+    const genericTemplateData = {
+        displayName: "کاربر جدید",
+        aiProvider: "gemini", aiModel: "", apiKey: "",
+        lang: 'fa', bgColor: '#0a0e14', accentColor: '#38bdf8',
+        streak: 0, totalXP: 0, focusMinutesToday: 0, routineStreak: 0, routineHistory: [],
+        routineItems: [
+            { id: 1, title: "نمونه عادت صبح: بیدار شدن و برنامه‌ریزی (اینجا را ویرایش کنید)", time: "08:00", block: "morning", done: false },
+            { id: 2, title: "نمونه عادت شب: مطالعه آزاد یا استراحت", time: "22:30", block: "evening", done: false }
+        ],
+        navItems: JSON.parse(JSON.stringify(rinPersonalData.navItems)),
+        history: [], examHistory: [],
+        plannedExams: [{ id: 1, title: "نمونه: آزمون میان‌ترم (برای حذف روی ✕ بزنید)", date: "تاریخ دلخواه", done: false }],
+        tasks: [
+            { id: 1, title: "نمونه تسک با اولویت بالا (سیستم امتیاز را خودکار تقسیم می‌کند)", priority: 3, progress: 0, note: "برای ثبت درصد انجام روی فلش ▾ کلیک کنید", expanded: false },
+            { id: 2, title: "نمونه تسک با اولویت متوسط", priority: 2, progress: 0, note: "توضیحات اختیاری...", expanded: false }
+        ],
+        weeklyColumns: ["صبح", "عصر", "شب"],
+        weeklyRows: ["شنبه","یکشنبه","دوشنبه","سه‌شنبه","چهارشنبه","پنج‌شنبه","جمعه"].map(d => ({ day: d, cells: ["کلیک برای ویرایش...", "—", "—"] })),
+        mapMilestones: [
+            { id: 1, label: "شروع مسیر", sub: "گام اول", done: true },
+            { id: 2, label: "هدف کوتاه‌مدت", sub: "ماه اول", done: false },
+            { id: 3, label: "هدف نهایی", sub: "پایان سال", done: false }
+        ],
+        goals: [{ id: 1, title: "🎯 هدف اول خود را اینجا بنویسید", desc: "روی این متن کلیک کنید تا مستقیماً ویرایش شود." }],
+        phases: [{ id: 1, title: "فاز ۱: نام فاز اول شما", desc: "توضیح کلی این فاز را اینجا بنویسید و با دکمه «+ باکس داخلی» زیرمجموعه اضافه کنید.", subBoxes: [] }],
+        formulas: [{ id: 1, subject: "درس نمونه", content: "فرمول‌ها و نکات مهم خود را اینجا ذخیره کنید." }],
+        weakTopics: [{ id: 1, subject: "درس نمونه", issue: "مباحثی که باید بیشتر تمرین کنید را اینجا ثبت کنید." }],
+        flashcards: [{ id: 1, category: "راهنما", front: "روی کارت کلیک کنید تا بچرخد!", back: "پاسخ کارت اینجا نمایش داده می‌شود. می‌توانید با هوش مصنوعی کارت بسازید." }],
+        notes: "اینجا دفترچه یادداشت آزاد شماست."
+    };
+
+    let appState = null, currentUser = null, isRegisterMode = false;
+    let activePageId = 'page-dashboard', selectedFcCategory = 'همه', currentFlashcardIdx = 0, isCardFlipped = false, currentExamData = null;
+
+    // AUTH HANDLERS
+    function toggleAuthMode(e) {
+        e.preventDefault();
+        isRegisterMode = !isRegisterMode;
+        document.getElementById('authName').style.display = isRegisterMode ? 'block' : 'none';
+        document.getElementById('authSubmitBtn').textContent = isRegisterMode ? 'ساخت اکانت جدید' : 'ورود به اکانت';
+        document.getElementById('authToggleText').textContent = isRegisterMode ? 'قبلاً اکانت ساخته‌اید؟' : 'اکانت ندارید؟';
+        document.getElementById('authToggleLink').textContent = isRegisterMode ? 'وارد شوید' : 'ثبت‌نام کنید';
+    }
+
+    async function loginWithGoogle() {
+        if (!window.CloudBridge || !window.CloudBridge.enabled) return alert("ابتدا تنظیمات Firebase را در کد وارد کنید (یا از ورود آفلاین استفاده کنید).");
+        try { await window.CloudBridge.loginGoogle(); } catch (err) { alert("خطا در ورود با گوگل: " + err.message); }
+    }
+
+    async function handleEmailAuth(e) {
+        e.preventDefault();
+        if (!window.CloudBridge || !window.CloudBridge.enabled) return alert("ابتدا تنظیمات Firebase را در کد وارد کنید (یا از ورود آفلاین استفاده کنید).");
+        const email = document.getElementById('authEmail').value.trim();
+        const pass = document.getElementById('authPass').value;
+        const name = document.getElementById('authName').value.trim();
+        try {
+            if (isRegisterMode) await window.CloudBridge.registerEmail(name || 'کاربر', email, pass);
+            else await window.CloudBridge.loginEmail(email, pass);
+        } catch (err) { alert("خطا: " + err.message); }
+    }
+
+    async function logoutUser() {
+        if (currentUser && window.CloudBridge && window.CloudBridge.enabled) await window.CloudBridge.logout();
+        else { currentUser = null; document.getElementById('authScreen').style.display = 'flex'; document.getElementById('appShell').style.display = 'none'; }
+    }
+
+    function enterOfflineDemo() {
+        currentUser = { uid: 'offline_rin', email: window.OWNER_EMAIL, displayName: 'رین (آفلاین)' };
+        appState = JSON.parse(localStorage.getItem('studyOS_v5_offline')) || JSON.parse(JSON.stringify(rinPersonalData));
+        document.getElementById('syncStatus').textContent = '💻 حالت آفلاین';
+        launchAppUI();
+    }
+
+    window.initAuthenticatedApp = async function(user) {
+        currentUser = user;
+        const isOwner = user.email && window.OWNER_EMAIL && user.email.toLowerCase() === window.OWNER_EMAIL.toLowerCase();
+        const cloudData = await window.CloudBridge.loadUserData(user.uid);
+        if (cloudData) {
+            appState = cloudData;
+        } else {
+            appState = JSON.parse(JSON.stringify(isOwner ? rinPersonalData : genericTemplateData));
+            appState.displayName = isOwner ? "رین" : (user.displayName || user.email.split('@')[0]);
+            await window.CloudBridge.saveUserData(user.uid, appState);
+        }
+        document.getElementById('syncStatus').textContent = '☁️ همگام‌سازی شد';
+        launchAppUI();
+    };
+
+    function launchAppUI() {
+        document.getElementById('authScreen').style.display = 'none';
+        document.getElementById('appShell').style.display = 'block';
+        document.getElementById('sidebarUserName').textContent = `سلام ${appState.displayName || 'کاربر'} 👋`;
+        applySettings(); renderNav(); renderTasks(); renderRoutine(); renderWeekly(); renderRoadmap(); renderPlannedExams(); renderVault(); updTimer();
+    }
+
+    let saveTimeout = null;
+    function saveState() {
+        if (!appState) return;
+        if (currentUser && currentUser.uid !== 'offline_rin' && window.CloudBridge && window.CloudBridge.enabled) {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => window.CloudBridge.saveUserData(currentUser.uid, appState), 600);
+        } else {
+            localStorage.setItem('studyOS_v5_offline', JSON.stringify(appState));
+        }
+    }
+
+    // MULTI-AI ROUTER (Gemini / OpenAI / OpenRouter)
+    function toggleCustomAiFields() {
+        const p = document.getElementById('aiProviderSelect').value;
+        document.getElementById('customModelWrap').style.display = (p === 'openrouter') ? 'block' : 'none';
+    }
+    function saveAiSettings() {
+        appState.aiProvider = document.getElementById('aiProviderSelect').value;
+        appState.aiModel = document.getElementById('aiModelInput').value.trim();
+        appState.apiKey = document.getElementById('apiKeyInput').value.trim();
+        saveState(); applySettings(); alert("تنظیمات هوش مصنوعی ذخیره شد!");
+    }
+
+    async function callAI(promptText) {
+        if (!appState.apiKey) return "⚠️ کلید API در صفحه تنظیمات وارد نشده است.";
+        try {
+            if (appState.aiProvider === 'gemini' || !appState.aiProvider) {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${appState.apiKey}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+                });
+                const d = await res.json();
+                return d.error ? `خطا: ${d.error.message}` : d.candidates[0].content.parts[0].text;
+            } else {
+                const url = appState.aiProvider === 'openai' ? 'https://api.openai.com/v1/chat/completions' : 'https://openrouter.ai/api/v1/chat/completions';
+                const model = appState.aiProvider === 'openai' ? 'gpt-4o-mini' : (appState.aiModel || 'deepseek/deepseek-chat');
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${appState.apiKey}` },
+                    body: JSON.stringify({ model, messages: [{ role: 'user', content: promptText }] })
+                });
+                const d = await res.json();
+                return d.error ? `خطا: ${d.error.message}` : d.choices[0].message.content;
+            }
+        } catch { return "خطا در برقراری ارتباط با سرویس هوش مصنوعی."; }
+    }
+
+    // NAVIGATION & SETTINGS
+    function renderNav() {
+        document.getElementById('dynamicNavList').innerHTML = appState.navItems.map(n => `<button class="nav-item ${n.id === activePageId ? 'active' : ''}" onclick="navigate('${n.id}')"><span>${n.icon}</span><span>${n.label}</span></button>`).join('');
+        document.getElementById('menuCustomizerList').innerHTML = appState.navItems.map((n, i) => `<div style="display:flex; align-items:center; gap:8px; background:var(--bg-main); padding:8px; border-radius:8px;"><span>${n.icon}</span><input type="text" class="input-std" style="padding:5px 8px;" value="${n.label}" onchange="appState.navItems[${i}].label=this.value;saveState();renderNav();"><button class="btn btn-sm" onclick="moveNav(${i},-1)">▲</button><button class="btn btn-sm" onclick="moveNav(${i},1)">▼</button></div>`).join('');
+    }
+    function moveNav(i, dir) { const ni = i + dir; if (ni >= 0 && ni < appState.navItems.length) { [appState.navItems[i], appState.navItems[ni]] = [appState.navItems[ni], appState.navItems[i]]; saveState(); renderNav(); } }
+    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('sidebarOverlay').classList.toggle('open'); }
+    function navigate(pageId) {
+        activePageId = pageId; document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById(pageId).classList.add('active');
+        document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('open'); renderNav();
+        if (pageId === 'page-analytics') renderAnalytics(); if (pageId === 'page-dashboard') renderDashboard(); if (pageId === 'page-roadmap') renderRoadmap(); if (pageId === 'page-routine') renderRoutine();
+    }
+    function applySettings() {
+        document.documentElement.style.setProperty('--bg-main', appState.bgColor); document.documentElement.style.setProperty('--accent', appState.accentColor);
+        document.getElementById('bgColorPicker').value = appState.bgColor; document.getElementById('accentColorPicker').value = appState.accentColor;
+        document.getElementById('aiProviderSelect').value = appState.aiProvider || 'gemini';
+        document.getElementById('aiModelInput').value = appState.aiModel || '';
+        document.getElementById('apiKeyInput').value = appState.apiKey || '';
+        toggleCustomAiFields();
+        const aiLabels = { gemini: 'Gemini', openai: 'ChatGPT', openrouter: 'OpenRouter' };
+        document.getElementById('activeAiNameBadge').textContent = aiLabels[appState.aiProvider || 'gemini'];
+        document.documentElement.dir = appState.lang === 'fa' ? 'rtl' : 'ltr';
+        document.getElementById('userRankBadge').textContent = `${appState.displayName || 'کاربر'} (${appState.totalXP || 0} XP)`;
+    }
+    document.getElementById('bgColorPicker').oninput = e => { appState.bgColor = e.target.value; applySettings(); saveState(); };
+    document.getElementById('accentColorPicker').oninput = e => { appState.accentColor = e.target.value; applySettings(); saveState(); };
+    function toggleLanguage() { appState.lang = appState.lang === 'fa' ? 'en' : 'fa'; applySettings(); saveState(); }
+
+    // ROUTINE
+    function calcRoutinePct() { return appState.routineItems.length ? Math.round((appState.routineItems.filter(r => r.done).length / appState.routineItems.length) * 100) : 0; }
+    function renderRoutine() {
+        const pct = calcRoutinePct();
+        document.getElementById('routineStreakVal').textContent = appState.routineStreak;
+        document.getElementById('routineTodayPct').textContent = pct; document.getElementById('routineTodayBar').style.width = `${pct}%`;
+        const blocks = [{ key: 'morning', title: '🌅 روتین صبح' }, { key: 'afternoon', title: '☀️ عصر' }, { key: 'evening', title: '🌙 شب' }];
+        document.getElementById('routineTimelineContainer').innerHTML = blocks.map(b => {
+            const items = appState.routineItems.filter(r => r.block === b.key).sort((a, x) => a.time.localeCompare(x.time));
+            return `<div class="routine-block"><div class="routine-block-title">${b.title}</div><div class="timeline-list">${items.map(it => `<div class="timeline-item ${it.done ? 'r-done' : ''}"><div style="display:flex; align-items:center; gap:10px;"><input type="checkbox" class="task-checkbox" style="accent-color:var(--routine);" ${it.done ? 'checked' : ''} onchange="toggleRoutineItem(${it.id})"><span class="time-pill">${it.time}</span><span style="${it.done ? 'text-decoration:line-through; color:var(--text-muted);' : ''}">${it.title}</span></div><button class="btn btn-sm btn-danger" style="padding:2px 7px;" onclick="deleteRoutineItem(${it.id})">✕</button></div>`).join('') || '<small style="color:var(--text-muted)">خالی</small>'}</div></div>`;
+        }).join('');
+        const bars = [...appState.routineHistory.slice(-13), { date: 'امروز', pct }];
+        document.getElementById('routineBarChart').innerHTML = bars.map(b => `<div class="bar-col" title="${b.date}: ${b.pct}%"><div class="bar-fill" style="height:${Math.max(4,b.pct)}%; background:var(--routine);"></div><span class="bar-lbl">${b.date.slice(-2)}</span></div>`).join('');
+        renderDashboard();
+    }
+    function addRoutineItem(e) { e.preventDefault(); appState.routineItems.push({ id: Date.now(), title: document.getElementById('rTitle').value.trim(), time: document.getElementById('rTime').value || '08:00', block: document.getElementById('rBlock').value, done: false }); e.target.reset(); saveState(); renderRoutine(); }
+    function toggleRoutineItem(id) { const it = appState.routineItems.find(r => r.id === id); if (it) { it.done = !it.done; saveState(); renderRoutine(); } }
+    function deleteRoutineItem(id) { appState.routineItems = appState.routineItems.filter(r => r.id !== id); saveState(); renderRoutine(); }
+    function finishRoutineDay() {
+        const pct = calcRoutinePct(), today = new Date().toISOString().split('T')[0];
+        const idx = appState.routineHistory.findIndex(h => h.date === today);
+        if (idx >= 0) appState.routineHistory[idx].pct = pct; else { appState.routineHistory.push({ date: today, pct }); if (pct > 0) appState.routineStreak++; }
+        if (confirm(`روتین امروز (${pct}%) ثبت شد! تیک‌ها برای فردا ریست شود؟`)) appState.routineItems.forEach(r => r.done = false);
+        saveState(); renderRoutine();
+    }
+
+    // DAILY TASKS
+    function calculateTodayScore() {
+        const tw = appState.tasks.reduce((s, t) => s + Number(t.priority), 0); if (!tw) return 0;
+        let e = 0; appState.tasks.forEach(t => { e += ((t.priority / tw) * 100) * (t.progress / 100); }); return Math.min(100, Math.round(e));
+    }
+    function renderTasks() {
+        const list = document.getElementById('dailyTaskList'); list.innerHTML = '';
+        const tw = appState.tasks.reduce((s, t) => s + Number(t.priority), 0);
+        appState.tasks.forEach(t => {
+            const maxPts = tw ? Math.round((t.priority / tw) * 100) : 0, curPts = Math.round(maxPts * (t.progress / 100));
+            const el = document.createElement('div'); el.className = `task-item ${t.progress === 100 ? 'done-full' : ''}`; el.id = `task-card-${t.id}`;
+            el.innerHTML = `<div class="task-summary"><div class="task-summary-left"><input type="checkbox" class="task-checkbox" id="chk-${t.id}" ${t.progress === 100 ? 'checked' : ''} onchange="toggleTaskCheck(${t.id})"><span class="task-title-text">${t.title}</span></div><div style="display:flex; align-items:center; gap:6px;"><span class="xp-pill" id="xp-${t.id}">${curPts}/${maxPts} XP</span><button class="btn btn-sm" onclick="toggleTaskExpand(${t.id})">${t.expanded ? '▴' : '▾'}</button></div></div><div class="task-details ${t.expanded ? 'open' : ''}"><div class="slider-row"><span>انجام: <b id="prog-txt-${t.id}">${t.progress}%</b></span><input type="range" min="0" max="100" step="1" value="${t.progress}" oninput="handleSmoothSlider(${t.id},this.value,${maxPts})" onchange="saveState();renderDashboard();"></div><div style="display:flex; justify-content:space-between;"><span style="font-size:0.8rem; color:var(--text-muted);">${t.note||''}</span><button class="btn btn-sm btn-danger" onclick="deleteTask(${t.id})">✕</button></div></div>`;
+            list.appendChild(el);
+        });
+        renderDashboard();
+    }
+    function handleSmoothSlider(id, val, maxPts) {
+        const t = appState.tasks.find(x => x.id === id); if (!t) return; t.progress = Number(val);
+        document.getElementById(`prog-txt-${id}`).textContent = `${t.progress}%`; document.getElementById(`xp-${id}`).textContent = `${Math.round(maxPts*(t.progress/100))}/${maxPts} XP`;
+        document.getElementById(`chk-${id}`).checked = (t.progress === 100); document.getElementById(`task-card-${id}`).classList.toggle('done-full', t.progress === 100);
+        const s = calculateTodayScore(); document.getElementById('dashDailyScore').textContent = s; document.getElementById('dashScoreBar').style.width = `${s}%`;
+    }
+    function addTask(e) { e.preventDefault(); appState.tasks.push({ id: Date.now(), title: document.getElementById('taskTitleInput').value.trim(), priority: Number(document.getElementById('taskPriorityInput').value), progress: 0, note: document.getElementById('taskNoteInput').value.trim(), expanded: false }); e.target.reset(); saveState(); renderTasks(); }
+    function toggleTaskCheck(id) { const t = appState.tasks.find(x => x.id === id); if (t) { t.progress = t.progress === 100 ? 0 : 100; saveState(); renderTasks(); } }
+    function toggleTaskExpand(id) { const t = appState.tasks.find(x => x.id === id); if (t) { t.expanded = !t.expanded; saveState(); renderTasks(); } }
+    function deleteTask(id) { appState.tasks = appState.tasks.filter(x => x.id !== id); saveState(); renderTasks(); }
+    function finishDay() {
+        const score = calculateTodayScore(), today = new Date().toISOString().split('T')[0];
+        const snap = { date: today, score, focusMins: appState.focusMinutesToday, tasks: appState.tasks.map(t => ({ title: t.title, progress: t.progress })) };
+        const idx = appState.history.findIndex(h => h.date === today);
+        if (idx >= 0) appState.history[idx] = snap; else { appState.history.push(snap); if (score > 0) appState.streak++; appState.totalXP += score; }
+        if (confirm(`امتیاز امروز (${score}/100) ثبت شد! تسک‌ها صفر شوند؟`)) { appState.tasks.forEach(t => t.progress = 0); appState.focusMinutesToday = 0; }
+        saveState(); applySettings(); renderTasks();
+    }
+
+    // DASHBOARD
+    function renderDashboard() {
+        const s = calculateTodayScore(); document.getElementById('dashDailyScore').textContent = s; document.getElementById('dashScoreBar').style.width = `${s}%`;
+        document.getElementById('dashStreak').textContent = appState.streak;
+        const rec = appState.history.slice(-30), avg = rec.length ? Math.round(rec.reduce((a, b) => a + b.score, 0) / rec.length) : s;
+        document.getElementById('dashMonthlyAvg').textContent = avg; document.getElementById('dashMonthlyBar').style.width = `${avg}%`;
+        const rPct = calcRoutinePct(); document.getElementById('dashRoutineStreak').textContent = appState.routineStreak; document.getElementById('dashRoutinePct').textContent = rPct; document.getElementById('dashRoutineBar').style.width = `${rPct}%`;
+        document.getElementById('dashUpcomingExams').textContent = appState.plannedExams.filter(e => !e.done).length;
+        const dayMap = [1, 2, 3, 4, 5, 6, 0], row = appState.weeklyRows[dayMap[new Date().getDay()]] || appState.weeklyRows[0];
+        document.getElementById('dashTodaySchedule').innerHTML = `<b style="color:var(--accent);">امروز (${row.day}):</b>` + appState.weeklyColumns.map((c, i) => `<div style="display:flex; justify-content:space-between; background:var(--bg-main); padding:6px 10px; border-radius:6px;"><span style="color:var(--text-muted);">${c}:</span><span>${row.cells[i]||'—'}</span></div>`).join('');
+        document.getElementById('dashTaskSummary').innerHTML = appState.tasks.map(t => `<div style="display:flex; justify-content:space-between; font-size:0.86rem; background:var(--bg-main); padding:6px 10px; border-radius:6px;"><span>${t.progress===100?'✅':t.progress>0?'⏳':'⬜'} ${t.title}</span><b style="color:var(--accent);">${t.progress}%</b></div>`).join('');
+    }
+
+    // WEEKLY, ROADMAP, EXAMS, VAULT, ANALYTICS
+    function renderWeekly() {
+        document.getElementById('weeklyThead').innerHTML = `<tr><th style="width:90px;">روز</th>` + appState.weeklyColumns.map((c, i) => `<th><div style="display:flex; justify-content:space-between;"><span contenteditable="true" onblur="appState.weeklyColumns[${i}]=this.innerText.trim();saveState();">${c}</span><button class="btn btn-sm btn-danger" style="padding:0 5px;" onclick="deleteWeeklyColumn(${i})">✕</button></div></th>`).join('') + `</tr>`;
+        document.getElementById('weeklyTbody').innerHTML = appState.weeklyRows.map((r, ri) => `<tr><td><strong contenteditable="true" onblur="appState.weeklyRows[${ri}].day=this.innerText.trim();saveState();">${r.day}</strong></td>` + appState.weeklyColumns.map((_, ci) => `<td contenteditable="true" onblur="appState.weeklyRows[${ri}].cells[${ci}]=this.innerText.trim();saveState();">${r.cells[ci]||''}</td>`).join('') + `</tr>`).join('');
+    }
+    function addWeeklyColumn() { const n = prompt("نام ستون جدید:"); if (n) { appState.weeklyColumns.push(n); appState.weeklyRows.forEach(r => r.cells.push('—')); saveState(); renderWeekly(); } }
+    function deleteWeeklyColumn(i) { if (appState.weeklyColumns.length <= 1) return; appState.weeklyColumns.splice(i, 1); appState.weeklyRows.forEach(r => r.cells.splice(i, 1)); saveState(); renderWeekly(); }
+
+    function renderRoadmap() {
+        const ms = appState.mapMilestones, w = Math.max(620, ms.length * 130), step = (w - 100) / Math.max(1, ms.length - 1);
+        let pathD = '', nodes = '', lastDone = -1; ms.forEach((m, i) => { if (m.done) lastDone = i; });
+        ms.forEach((m, i) => {
+            const x = 50 + i * step, y = i % 2 === 0 ? 65 : 115; pathD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
+            const col = m.done ? '#10b981' : (i === lastDone + 1 ? '#38bdf8' : '#30363d');
+            nodes += `<g class="map-node" onclick="toggleMilestone(${m.id})"><circle cx="${x}" cy="${y}" r="16" fill="${col}" stroke="#0a0e14" stroke-width="3"/><text x="${x}" y="${y+5}" text-anchor="middle" fill="#0a0e14" font-size="12" font-weight="bold">${m.done?'✓':i+1}</text><text x="${x}" y="${y-24}" text-anchor="middle" fill="#e6edf3" font-size="11" font-weight="bold">${m.label}</text><text x="${x}" y="${y+32}" text-anchor="middle" fill="#8b949e" font-size="10">${m.sub}</text></g>`;
+        });
+        document.getElementById('questMapWrap').innerHTML = `<svg class="quest-svg" viewBox="0 0 ${w} 180"><path d="${pathD}" fill="none" stroke="#253042" stroke-width="6" stroke-dasharray="8 6"/>${nodes}</svg>`;
+        document.getElementById('goalBoxesContainer').innerHTML = appState.goals.map((g, i) => `<div style="background:var(--bg-main); border:1px solid var(--border); border-radius:10px; padding:14px;"><div style="display:flex; justify-content:space-between; margin-bottom:6px;"><strong style="color:var(--accent);" contenteditable="true" onblur="appState.goals[${i}].title=this.innerText;saveState();">${g.title}</strong><button class="btn btn-sm btn-danger" style="padding:1px 6px;" onclick="deleteGoalBox(${g.id})">✕</button></div><p style="font-size:0.84rem; color:var(--text-muted);" contenteditable="true" onblur="appState.goals[${i}].desc=this.innerText;saveState();">${g.desc}</p></div>`).join('');
+        document.getElementById('phaseBoxesContainer').innerHTML = appState.phases.map((p, pi) => `<div class="phase-card"><div style="display:flex; justify-content:space-between; gap:8px; margin-bottom:6px;"><strong style="color:var(--accent);" contenteditable="true" onblur="appState.phases[${pi}].title=this.innerText;saveState();">${p.title}</strong><div style="display:flex; gap:6px;"><button class="btn btn-sm" onclick="addSubBox(${p.id})">+ باکس داخلی</button><button class="btn btn-sm btn-danger" onclick="deletePhaseBox(${p.id})">✕</button></div></div><p style="font-size:0.84rem; color:var(--text-muted);" contenteditable="true" onblur="appState.phases[${pi}].desc=this.innerText;saveState();">${p.desc}</p>${p.subBoxes&&p.subBoxes.length?`<div class="subbox-grid">${p.subBoxes.map((sb,si)=>`<div class="subbox-item"><div style="display:flex; justify-content:space-between; margin-bottom:4px;"><strong contenteditable="true" onblur="appState.phases[${pi}].subBoxes[${si}].title=this.innerText;saveState();">${sb.title}</strong><button class="btn btn-sm btn-danger" style="padding:0 5px;" onclick="deleteSubBox(${p.id},${sb.id})">✕</button></div><div style="color:var(--text-muted); font-size:0.8rem;" contenteditable="true" onblur="appState.phases[${pi}].subBoxes[${si}].content=this.innerText;saveState();">${sb.content}</div></div>`).join('')}</div>`:''}</div>`).join('');
+    }
+    function toggleMilestone(id) { const m = appState.mapMilestones.find(x => x.id === id); if (m) { m.done = !m.done; saveState(); renderRoadmap(); } }
+    function addMapMilestone() { const l = prompt("نام ایستگاه:"); if (l) { appState.mapMilestones.push({ id: Date.now(), label: l, sub: prompt("تاریخ:")||"", done: false }); saveState(); renderRoadmap(); } }
+    function addGoalBox() { const t = prompt("عنوان هدف:"); if (t) { appState.goals.push({ id: Date.now(), title: t, desc: prompt("توضیحات:")||"" }); saveState(); renderRoadmap(); } }
+    function deleteGoalBox(id) { appState.goals = appState.goals.filter(g => g.id !== id); saveState(); renderRoadmap(); }
+    function addPhaseBox() { const t = prompt("عنوان فاز:"); if (t) { appState.phases.push({ id: Date.now(), title: t, desc: prompt("توضیح:")||"", subBoxes: [] }); saveState(); renderRoadmap(); } }
+    function deletePhaseBox(id) { appState.phases = appState.phases.filter(p => p.id !== id); saveState(); renderRoadmap(); }
+    function addSubBox(pid) { const p = appState.phases.find(x => x.id === pid); const t = prompt("عنوان باکس داخلی:"); if (p && t) { p.subBoxes.push({ id: Date.now(), title: t, content: prompt("توضیح:")||"" }); saveState(); renderRoadmap(); } }
+    function deleteSubBox(pid, sid) { const p = appState.phases.find(x => x.id === pid); if (p) { p.subBoxes = p.subBoxes.filter(s => s.id !== sid); saveState(); renderRoadmap(); } }
+
+    function renderPlannedExams() {
+        document.getElementById('plannedExamsList').innerHTML = appState.plannedExams.map(e => `<div style="display:flex; justify-content:space-between; background:var(--bg-main); padding:8px 12px; border-radius:8px; font-size:0.86rem;"><div style="display:flex; align-items:center; gap:8px;"><input type="checkbox" class="task-checkbox" ${e.done?'checked':''} onchange="togglePlannedExam(${e.id})"><span style="${e.done?'text-decoration:line-through; color:var(--text-muted);':''}">${e.title} <small style="color:var(--accent);">(${e.date})</small></span></div><button class="btn btn-sm btn-danger" onclick="deletePlannedExam(${e.id})">✕</button></div>`).join('');
+        renderDashboard();
+    }
+    function addPlannedExam(e) { e.preventDefault(); appState.plannedExams.push({ id: Date.now(), title: document.getElementById('planExamTitle').value, date: document.getElementById('planExamDate').value, done: false }); e.target.reset(); saveState(); renderPlannedExams(); }
+    function togglePlannedExam(id) { const x = appState.plannedExams.find(e => e.id === id); if (x) { x.done = !x.done; saveState(); renderPlannedExams(); } }
+    function deletePlannedExam(id) { appState.plannedExams = appState.plannedExams.filter(e => e.id !== id); saveState(); renderPlannedExams(); }
+    function loadSampleDrivingExam() {
+        currentExamData = { subject: "آیین‌نامه (نمونه)", type: "mcq", questions: [
+            { q: "در تقاطع هم‌عرض فاقد تابلو حق تقدم با کدام خودرو است؟", options: ["خودروی مستقیم", "خودروی سمت راست", "خودروی سریع‌تر", "گردش به چپ"], answerIndex: 1 },
+            { q: "حداکثر سرعت در معابر شریانی فرعی چقدر است؟", options: ["۳۰", "۵۰", "۶۰", "۸۰"], answerIndex: 1 }
+        ]}; renderActiveExam();
+    }
+    async function generateAIExam(e) {
+        e.preventDefault();
+        const subject = document.getElementById('examSubject').value, type = document.getElementById('examType').value, diff = document.getElementById('examDiff').value, count = document.getElementById('examCount').value, desc = document.getElementById('examDesc').value;
+        const btn = document.getElementById('genExamBtn'); btn.textContent = "⏳ ..."; btn.disabled = true;
+        const raw = await callAI(`آزمون فارسی «${subject}» سطح «${diff}» شامل ${count} سوال «${type==='mcq'?'چهارگزینه‌ای':'تشریحی'}» بساز. توضیحات: ${desc}. فقط آرایه JSON معتبر: ${type==='mcq'?'[{"q":"","options":["","","",""],"answerIndex":0}]':'[{"q":"","modelAnswer":""}]'}`);
+        btn.textContent = "✨ ساخت و شروع آزمون"; btn.disabled = false;
+        try { currentExamData = { subject, type, questions: JSON.parse(raw.match(/\[[\s\S]*\]/)[0]) }; renderActiveExam(); } catch { alert(raw); }
+    }
+    function renderActiveExam() {
+        document.getElementById('activeExamCard').style.display = 'block'; document.getElementById('examResultBox').style.display = 'none';
+        document.getElementById('activeExamTitle').textContent = `آزمون: ${currentExamData.subject}`;
+        document.getElementById('examQuestionsContainer').innerHTML = currentExamData.questions.map((q, i) => `<div class="exam-q-card"><div style="font-weight:700; margin-bottom:8px;">${i+1}. ${q.q}</div>${currentExamData.type==='mcq'?q.options.map((o,oi)=>`<label class="exam-option"><input type="radio" name="eq-${i}" value="${oi}"> <span>${o}</span></label>`).join(''):`<textarea id="desc-ans-${i}" rows="3"></textarea>`}</div>`).join('');
+    }
+    async function submitExam() {
+        const resBox = document.getElementById('examResultBox'); resBox.style.display = 'block';
+        if (currentExamData.type === 'mcq') {
+            let ok = 0, fb = ''; currentExamData.questions.forEach((q, i) => { const s = document.querySelector(`input[name="eq-${i}"]:checked`); if (s && Number(s.value) === q.answerIndex) { ok++; fb += `✅ سوال ${i+1}\n`; } else fb += `❌ سوال ${i+1} (صحیح: ${q.options[q.answerIndex]})\n`; });
+            const pct = Math.round((ok / currentExamData.questions.length) * 100); resBox.textContent = `نمره: ${pct}%\n\n${fb}`;
+            appState.examHistory.push({ date: new Date().toISOString().split('T')[0], subject: currentExamData.subject, score: pct }); saveState();
+        } else {
+            const ans = currentExamData.questions.map((q, i) => `سوال: ${q.q}\nاستاندارد: ${q.modelAnswer}\nکاربر: ${document.getElementById(`desc-ans-${i}`).value}`).join('\n---\n');
+            resBox.textContent = "⏳ در حال تصحیح..."; resBox.textContent = await callAI(`پاسخ‌های تشریحی را تصحیح کن و نمره از ۱۰۰ بده:\n${ans}`);
+        }
+    }
+
+    function openVaultTab(e, id) { document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById(id).classList.add('active'); e.currentTarget.classList.add('active'); }
+    function renderVault() {
+        const cats = ['همه', ...new Set(appState.flashcards.map(f => f.category || 'عمومی'))];
+        document.getElementById('fcCategoryPills').innerHTML = cats.map(c => `<button class="cat-pill ${c===selectedFcCategory?'active':''}" onclick="selectedFcCategory='${c}';currentFlashcardIdx=0;isCardFlipped=false;renderVault();">${c}</button>`).join('');
+        const flt = selectedFcCategory === 'همه' ? appState.flashcards : appState.flashcards.filter(f => (f.category || 'عمومی') === selectedFcCategory);
+        const stg = document.getElementById('flashcardStage');
+        if (!flt.length) stg.innerHTML = '<p style="text-align:center; color:var(--text-muted);">خالی</p>';
+        else {
+            if (currentFlashcardIdx >= flt.length) currentFlashcardIdx = 0; const fc = flt[currentFlashcardIdx];
+            stg.innerHTML = `<div class="flashcard" onclick="isCardFlipped=!isCardFlipped;renderVault();"><span class="badge badge-low" style="margin-bottom:8px;">${fc.category||'عمومی'}</span><div style="font-size:1.05rem; font-weight:600;">${isCardFlipped?fc.back:fc.front}</div></div><div style="display:flex; justify-content:center; gap:10px; margin-top:12px;"><button class="btn btn-sm" onclick="isCardFlipped=false;currentFlashcardIdx=(currentFlashcardIdx-1+${flt.length})%${flt.length};renderVault();">قبلی</button><span>${currentFlashcardIdx+1}/${flt.length}</span><button class="btn btn-sm" onclick="isCardFlipped=false;currentFlashcardIdx=(currentFlashcardIdx+1)%${flt.length};renderVault();">بعدی</button><button class="btn btn-sm btn-danger" onclick="deleteFlashcard(${fc.id})">حذف</button></div>`;
+        }
+        document.getElementById('formulasList').innerHTML = appState.formulas.map(f => `<div style="background:var(--bg-main); border:1px solid var(--border); border-radius:8px; padding:12px;"><div style="display:flex; justify-content:space-between;"><span class="badge badge-low">${f.subject}</span><button class="btn btn-sm btn-danger" style="padding:0 5px;" onclick="deleteFormula(${f.id})">✕</button></div><div style="font-size:0.88rem; margin-top:4px;">${f.content}</div></div>`).join('');
+        document.getElementById('weakList').innerHTML = appState.weakTopics.map(w => `<div style="display:flex; justify-content:space-between; background:var(--bg-main); padding:10px; border-radius:8px; font-size:0.88rem;"><div><span class="badge badge-high">${w.subject}</span> ${w.issue}</div><button class="btn btn-sm btn-danger" onclick="deleteWeak(${w.id})">✓</button></div>`).join('');
+        const nEl = document.getElementById('generalNotes'); nEl.value = appState.notes; nEl.oninput = e => { appState.notes = e.target.value; saveState(); };
+    }
+    async function generateAIFlashcards(e) {
+        e.preventDefault(); const topic = document.getElementById('aiFcTopic').value, cat = document.getElementById('aiFcCat').value, diff = document.getElementById('aiFcDiff').value, count = document.getElementById('aiFcCount').value;
+        const btn = document.getElementById('aiFcBtn'); btn.textContent = "⏳..."; btn.disabled = true;
+        const raw = await callAI(`${count} فلش‌کارت فارسی موضوع «${topic}» سطح «${diff}» بساز. فقط آرایه JSON: [{"front":"","back":""}]`);
+        btn.textContent = "ساخت کارت‌ها"; btn.disabled = false;
+        try { JSON.parse(raw.match(/\[[\s\S]*\]/)[0]).forEach(c => appState.flashcards.push({ id: Date.now()+Math.random(), category: cat, front: c.front, back: c.back })); selectedFcCategory = cat; saveState(); renderVault(); } catch { alert(raw); }
+    }
+    function addFlashcard(e) { e.preventDefault(); appState.flashcards.push({ id: Date.now(), category: document.getElementById('fcCat').value, front: document.getElementById('fcFront').value, back: document.getElementById('fcBack').value }); e.target.reset(); saveState(); renderVault(); }
+    function deleteFlashcard(id) { appState.flashcards = appState.flashcards.filter(f => f.id !== id); saveState(); renderVault(); }
+    function addFormula(e) { e.preventDefault(); appState.formulas.push({ id: Date.now(), subject: document.getElementById('formSubject').value, content: document.getElementById('formContent').value }); e.target.reset(); saveState(); renderVault(); }
+    function deleteFormula(id) { appState.formulas = appState.formulas.filter(f => f.id !== id); saveState(); renderVault(); }
+    function addWeakTopic(e) { e.preventDefault(); appState.weakTopics.push({ id: Date.now(), subject: document.getElementById('weakSubject').value, issue: document.getElementById('weakIssue').value }); e.target.reset(); saveState(); renderVault(); }
+    function deleteWeak(id) { appState.weakTopics = appState.weakTopics.filter(w => w.id !== id); saveState(); renderVault(); }
+
+    function renderAnalytics() {
+        const sHist = [...appState.history.slice(-13), { date: 'امروز', score: calculateTodayScore() }];
+        document.getElementById('scoreTrendChart').innerHTML = sHist.map(h => `<div class="bar-col" title="${h.date}: ${h.score}"><div class="bar-fill" style="height:${Math.max(4,h.score)}%; background:var(--accent);"></div><span class="bar-lbl">${h.date.slice(-2)}</span></div>`).join('');
+        const eChart = document.getElementById('examTrendChart');
+        eChart.innerHTML = appState.examHistory.length ? appState.examHistory.slice(-10).map(ex => `<div class="bar-col" title="${ex.subject}: ${ex.score}%"><div class="bar-fill" style="height:${Math.max(5,ex.score)}%; background:${ex.score>=70?'var(--low)':'var(--high)'};"></div><span class="bar-lbl">${ex.subject.slice(0,6)}</span></div>`).join('') : '<small style="margin:auto; color:var(--text-muted);">بدون آزمون</small>';
+        const tMap = {}; appState.history.forEach(h => (h.tasks||[]).forEach(t => { if (!tMap[t.title]) tMap[t.title]=[]; tMap[t.title].push(t.progress); })); appState.tasks.forEach(t => { if (!tMap[t.title]) tMap[t.title]=[]; tMap[t.title].push(t.progress); });
+        document.getElementById('taskAnalyticsTable').innerHTML = Object.entries(tMap).map(([title, arr]) => { const avg = Math.round(arr.reduce((a,b)=>a+b,0)/arr.length); return `<tr><td>${title}</td><td><b>${avg}%</b></td><td><span class="badge ${avg>=75?'badge-low':avg<45?'badge-high':'badge-med'}">${avg>=75?'عالی':avg<45?'نیاز به توجه':'متوسط'}</span></td></tr>`; }).join('');
+    }
+    async function sendChat(e) {
+        e.preventDefault(); const inp = document.getElementById('chatInput'), box = document.getElementById('chatMessages'), txt = inp.value.trim(); if (!txt) return;
+        box.innerHTML += `<div class="msg msg-user">${txt}</div>`; inp.value = ''; const lid = 'l-'+Date.now(); box.innerHTML += `<div class="msg msg-ai" id="${lid}">...</div>`; box.scrollTop = box.scrollHeight;
+        document.getElementById(lid).textContent = await callAI(`کوتاه و دقیق به فارسی پاسخ بده:\n${txt}`); box.scrollTop = box.scrollHeight;
+    }
+    function buildAnalyticsPrompt() {
+        return `تحلیل عملکرد: استریک درسی ${appState.streak}، امتیاز امروز ${calculateTodayScore()}/100، استریک روتین ${appState.routineStreak}، تسک‌ها: ${appState.tasks.map(t=>`${t.title}:${t.progress}%`).join('|')}، آزمون‌ها: ${appState.examHistory.map(e=>`${e.subject}:${e.score}%`).join('|')}. فقط JSON فارسی: {"strengths":"","weaknesses":"","actionPlan":""}`;
+    }
+    async function runAIAnalysis() {
+        const btn = document.getElementById('runAiBtn'); btn.textContent = "⏳..."; btn.disabled = true;
+        const raw = await callAI(buildAnalyticsPrompt()); btn.textContent = "✨ تحلیل جامع"; btn.disabled = false;
+        try { const o = JSON.parse(raw.match(/\{[\s\S]*\}/)[0]); document.getElementById('aiStrengths').textContent = o.strengths; document.getElementById('aiWeaknesses').textContent = o.weaknesses; document.getElementById('aiActionPlan').textContent = o.actionPlan; } catch { document.getElementById('aiStrengths').textContent = raw; }
+    }
+    function copyReportForGemini() { navigator.clipboard.writeText(buildAnalyticsPrompt()); alert("گزارش کپی شد!"); }
+
+    // Timer
+    let timerSec = 45 * 60, initMins = 45, tInt = null;
+    function updTimer() { document.getElementById('timerDisplay').textContent = `${String(Math.floor(timerSec/60)).padStart(2,'0')}:${String(timerSec%60).padStart(2,'0')}`; }
+    function setCustomTimer() { pauseTimer(); initMins = parseInt(document.getElementById('customMinutes').value)||25; timerSec = initMins*60; updTimer(); }
+    function startTimer() { if (tInt) return; tInt = setInterval(() => { if (timerSec > 0) { timerSec--; updTimer(); } else { pauseTimer(); appState.focusMinutesToday += initMins; saveState(); alert("زمان تمام شد!"); } }, 1000); }
+    function pauseTimer() { clearInterval(tInt); tInt = null; }
+    function resetTimer() { pauseTimer(); timerSec = initMins * 60; updTimer(); }
+</script>
+</body>
+</html>
